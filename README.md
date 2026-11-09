@@ -18,6 +18,7 @@ and shelves. Requires RimWorld 1.7 and Harmony.
 
 ## Development
 
-See [the tooling guide](tools/README.md) to build or contribute to a mod.
+See [the tooling guide](tools/README.md) for prerequisites, initial configuration
+and development commands.
 
 The tooling is [MIT licensed](LICENSE); each mod keeps its own license.

@@ -31,34 +31,71 @@ still pay the game startup cost, so use smaller checks where sufficient and
 batch related assertions into one run. See [running isolated checks](../docs/running-rimworld.md)
 for fixtures, save probes and results.
 
-## First checkout
+## Prerequisites
 
-The build tooling requires Linux, Git, uv, Python 3.11 or newer, the .NET 10 SDK,
-a RimWorld 1.7 installation, and Harmony's 1.7 Workshop files (item 2009463077).
+| Requirement | Used for |
+| --- | --- |
+| Linux | The launcher, file locking and process inspection; Windows and macOS are not supported yet |
+| Git | Independent workspace and mod repositories, source revision records |
+| uv | Running the locked Python environment through `tools/rw` |
+| Python | The wrapper selects Python 3.12 via `.python-version`; the code requires 3.11 or newer |
+| .NET 10 SDK | Compiling mods and test fixtures; selected by the root `global.json` |
+| RimWorld 1.7, installed locally | Game assemblies for compilation and the engine for simulation tests |
+| Harmony's 1.7 files | Refilled and the shared mod reference set; Workshop item 2009463077 |
+
 Game and dependency assemblies are read from your own installations and are not
-included in these repositories. The Python orchestration currently uses Linux
-file locking and process inspection; Windows and macOS are not supported.
+included in these repositories. Download any other dependencies required by the
+mod you are working on.
 
-Clone the [tooling repository](https://github.com/eiennohito/rimworld-mods)
-wherever you want the workspace root to be. From that root, clone a mod repository
-into the directory named by its `mod.toml` key. For example, clone
-[Refilled](https://github.com/eiennohito/rimworld-kanbanstockpile-refilled)
-into `projects/kanban-refilled/`:
+| Optional tool or integration | Needed when |
+| --- | --- |
+| Codex or Claude Code | Working with a coding agent |
+| RimSort with a configured instance | Installing and syncing builds into that instance's local mod folder |
+| ILSpy command-line tool (`ilspycmd`) | Inspecting installed game and mod code with `tools/rw decompile` |
+| Desktop Steam, online with a RimWorld license | Publishing Workshop updates using the desktop session |
+| Xvfb and Mesa software Vulkan | Running graphical scenarios or capturing screenshots; see [display setup](../docs/running-rimworld.md#isolation) |
+
+RimSort is not needed to build or run isolated tests. For installation and sync,
+the tooling reads its existing `settings.json`; it does not create a RimSort
+instance or change the active mod list.
+
+## Initial configuration
+
+Clone the workspace and the mod you want to work on. For Refilled:
 
 ```sh
 git clone https://github.com/eiennohito/rimworld-mods.git
 cd rimworld-mods
 mkdir -p projects
 git clone https://github.com/eiennohito/rimworld-kanbanstockpile-refilled.git projects/kanban-refilled
-cp workspace.example.json workspace.json
 ```
 
-Edit `workspace.json` to set `game` to the RimWorld installation directory
-containing `Assembly-CSharp.dll`, and `workshop` to the Workshop app directory
-`steamapps/workshop/content/294100`. Absolute paths, paths relative to the
-workspace root, and `~` are accepted. The local config is ignored by Git.
-Alternatively, provide existing `references/game` and `references/workshop`
-directories or symlinks; these are the defaults when no config exists.
+An agent can help with setup, especially when Steam libraries or RimSort data
+are in different locations. Ask it:
+
+> Set up this workspace for RimWorld 1.7 on this machine. Find my game, Workshop
+> files and RimSort instance, check the prerequisites, and configure the local paths.
+
+For direct configuration, supply your installation paths:
+
+```sh
+tools/rw setup --game "/path/to/steamapps/common/RimWorld" \
+  --workshop "/path/to/steamapps/workshop/content/294100"
+```
+
+This writes the Git-ignored `workspace.json`, checks the game version and creates
+reference links. `--game` points to the directory containing `Assembly-CSharp.dll`.
+Paths can be absolute, relative to the workspace root, or start with `~`.
+Existing configuration fields are retained, and conflicting reference links are
+reported without being replaced. Rerun `tools/rw setup` to check existing paths.
+
+Add `--rimsort-data "/path/to/RimSort/data"` to configure the directory containing
+RimSort's `settings.json`. Other optional flags are `--rimsort`, `--player-data`
+and `--ilspy`; see `tools/rw setup --help`. You can also edit `workspace.json`
+directly using `workspace.example.json` as a starting point. Existing
+`references/game` and `references/workshop` directories or symlinks work as defaults.
+
+Once configured:
 
 ```sh
 tools/rw setup
@@ -68,9 +105,8 @@ tools/rw build kanban-refilled
 tools/rw latest kanban-refilled
 ```
 
-`setup` checks the 1.7 version and creates reference links. It requires neither
-RimSort nor a player profile. `check` runs infrastructure tests without launching
-the game; it also checks the basic layout of discovered mod repositories.
+`check` runs infrastructure tests without launching the game; it also checks
+the basic layout of discovered mod repositories.
 The frozen uv lock selects the Python environment. `global.json` selects the
 .NET SDK; the build uses the SDK's installed reference packs without NuGet feeds.
 

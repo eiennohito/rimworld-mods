@@ -6,26 +6,7 @@ import sys
 import xml.etree.ElementTree as ET
 from . import core as c
 from . import build as b
-
-
-def setup():
-    for key in ('game', 'workshop'):
-        source = Path(c.CFG[key])
-        if not source.is_dir():
-            raise ValueError(f'Missing {key}: {source}. Copy workspace.example.json to workspace.json and configure your paths.')
-    c.game_record()
-    for key in ('game', 'workshop', 'rimsort', 'rimsort_data', 'player_data'):
-        source = Path(c.CFG[key])
-        if not source.is_dir(): continue
-        link = c.ROOT / 'references' / key
-        if source.absolute() == link.absolute(): continue
-        if link.is_symlink() and link.resolve() == source.resolve(): continue
-        if link.exists() or link.is_symlink(): raise ValueError(f'Reference path already exists: {link}')
-        link.parent.mkdir(exist_ok=True)
-        link.symlink_to(source, target_is_directory=True)
-    for name in ('outputs/mods', 'sessions', 'state', 'investigations'):
-        (c.ROOT / name).mkdir(parents=True, exist_ok=True)
-    print('Workspace ready for', c.game_record()['version'])
+from .configuration import DIRECTORIES, setup
 
 
 def inventory():
@@ -43,7 +24,11 @@ def inventory():
 def execute():
     parser = argparse.ArgumentParser(description='RimWorld 1.7 workspace: independent projects, shared infrastructure.')
     commands = parser.add_subparsers(dest='command', required=True)
-    for name in ('setup', 'inventory', 'list', 'check'): commands.add_parser(name)
+    for name in ('inventory', 'list', 'check'): commands.add_parser(name)
+    p = commands.add_parser('setup', help='Save local paths and prepare workspace references')
+    for key in DIRECTORIES:
+        p.add_argument('--' + key.replace('_', '-'), type=Path, help=f'Path to {key.replace("_", " ")}')
+    p.add_argument('--ilspy', help='ilspycmd executable path or command name')
     parser.add_argument('--session', help='Reuse a named session (seven-day retention after last command)')
     p = commands.add_parser('clean'); p.add_argument('kind', choices=['sessions', 'cache'], default='sessions', nargs='?'); p.add_argument('--dry-run', action='store_true', help='Preview cleanup without deleting files')
     p.add_argument('--all', action='store_true', help='Collect inactive, unpinned sessions before their expiry too')
@@ -143,7 +128,7 @@ def dispatch(args):
             for relative in ('PURPOSE.md', '.git', project['project']):
                 if not (project['root'] / relative).exists(): raise ValueError(f'{key}: missing {relative}')
         subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=c.ROOT / 'tools', check=True, env=c.environment())
-    elif args.command == 'setup': setup()
+    elif args.command == 'setup': setup({key: getattr(args, key) for key in (*DIRECTORIES, 'ilspy')})
     elif args.command == 'inventory': inventory()
     elif args.command == 'list':
         for key, project in c.projects().items(): print(f'{key:24} {project.get("status", "active"):8} {project["name"]}')
