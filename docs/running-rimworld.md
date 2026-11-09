@@ -12,6 +12,12 @@ tools/rw test PROJECT --suite runtime
 tools/rw test PROJECT --suite runtime --with PACKAGE_ID
 ```
 
+Use `--with-mod PATH` to test against a local mod directory inside the workspace,
+including a source-built dependency in a leased session. It must contain
+`About/About.xml` and its runtime files. The launcher copies it into the isolated
+host; it does not install or activate it. Its package ID overrides an installed
+copy for that test only, and its declared dependencies are included.
+
 Suites are declared in each project's `mod.toml`; fixtures live in its `tests/`.
 They use the generic shared reporting harness, without per-mod dispatch in shared
 code. Use `--worktree PATH` for independent edits of the same project.

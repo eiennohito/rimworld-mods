@@ -62,14 +62,21 @@ def private_display(env, run_dir, log, enabled):
                 server.kill(); server.wait()
 
 
-def dependencies(project, additional):
+def dependencies(project, additional, local_paths=()):
     index = c.workshop_index()
+    selected = {}
+    for path in local_paths:
+        path = c.local(c.ROOT / path)
+        key = ET.parse(path / 'About/About.xml').getroot().findtext('packageId', '').strip().lower()
+        if not key or key in selected: raise ValueError(f'Missing or duplicate local mod package ID: {path}')
+        selected[key] = path
+    index.update(selected)
     # The isolated host already includes official game content. Required DLC
     # must be present, but is not a Workshop download to stage under Mods.
     official = {ET.parse(path).getroot().findtext('packageId', '').lower()
                 for path in (c.GAME / 'Data').glob('*/About/About.xml')}
     own = project['package_id'].lower()
-    pending = list(project.get('dependencies', [])) + list(additional)
+    pending = list(project.get('dependencies', [])) + list(additional) + list(selected)
     result = {}
     while pending:
         key = pending.pop(0).lower()
@@ -117,7 +124,7 @@ def harness(project, suite, run_dir):
     return package_id
 
 
-def test(project, suite, additional=(), timeout=240):
+def test(project, suite, additional=(), timeout=240, local_paths=()):
     if suite not in project.get('tests', {}): raise ValueError(f'No {suite} suite declared for {project["key"]}')
     package = b.build(project)
     record = b.validate(package)
@@ -129,7 +136,7 @@ def test(project, suite, additional=(), timeout=240):
         data = run_dir / 'data'
         preferences(data)
         game = make_game(run_dir)
-        dep_paths = dependencies(project, additional)
+        dep_paths = dependencies(project, additional, local_paths)
         package_ids = []
         packages = {project['package_id']: {'package': str(package), 'build_id': record['build_id']}}
         snapshot.copy_tree(package, game / 'Mods' / project['key'])

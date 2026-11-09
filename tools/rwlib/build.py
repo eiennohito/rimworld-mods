@@ -12,8 +12,11 @@ def compile_project(project, output, cache_key, capture=False):
     output = c.local(output)
     output.mkdir(parents=True, exist_ok=True)
     obj = c.ROOT / '.cache/obj' / cache_key if output.is_relative_to(c.ROOT / '.cache') else output / 'obj'
+    # A generated fixture may sit beside copied mods containing older DLLs.
+    # Resolve explicit references instead of scanning those trees for candidates.
     command = ['dotnet', 'build', project, '--configuration', 'Release', '--configfile',
                c.ROOT / 'tools/offline.nuget.config', '-p:NuGetAudit=false', '-p:UseSharedCompilation=false',
+               '-p:AssemblySearchPath_UseCandidateAssemblyFiles=false',
                '-p:WorkspaceRoot=' + str(c.ROOT), '-p:RimWorldDir=' + str(c.GAME),
                '-p:HarmonyDir=' + str(c.WORKSHOP / '2009463077/1.7/Assemblies'),
                '-p:BaseIntermediateOutputPath=' + str(obj) + '/', '-o', output]

@@ -44,6 +44,16 @@ class WorkspaceTests(unittest.TestCase):
             self.assertEqual(runner.dependencies({'package_id': 'local.patch'}, ['test.mod']), {'test.mod': self.source})
             compile_mod.assert_called_once_with(companion)
             validate.assert_called_once_with(self.source)
+
+    def test_runtime_dependencies_accept_local_test_copies_without_installation(self):
+        other = self.root / 'other'
+        shutil.copytree(self.source, other)
+        with patch.object(core, 'ROOT', self.root), patch.object(core, 'GAME', self.root / 'game'), \
+             patch.object(core, 'workshop_index', return_value={'test.mod': other}):
+            self.assertEqual(runner.dependencies({'package_id': 'local.patch'}, [], [self.source]),
+                             {'test.mod': self.source})
+            with self.assertRaisesRegex(ValueError, 'duplicate'):
+                runner.dependencies({'package_id': 'local.patch'}, [], [self.source, other])
     def test_install_and_duplicate_replacement_keep_backups(self):
         install.transaction(self.source, self.destination, [], self.root / 'unused')
         (self.destination / 'payload').write_bytes(b'old-build')

@@ -48,6 +48,7 @@ def execute():
     p.add_argument('--backend', choices=['desktop', 'steamcmd'], default='desktop', help='default: desktop, using the running Steam session; steamcmd requires explicit selection')
     p.add_argument('--timeout', type=float, default=600, help='Desktop upload timeout in seconds (default: 600)')
     p = commands.add_parser('test'); p.add_argument('project'); p.add_argument('--worktree', type=Path); p.add_argument('--suite', default='runtime'); p.add_argument('--with', dest='additional', action='append', default=[]); p.add_argument('--timeout', type=int, default=240)
+    p.add_argument('--with-mod', dest='local_paths', type=Path, action='append', default=[], help='Include a local mod directory inside the workspace in the isolated test only')
     p = commands.add_parser('probe', help='Run an investigation fixture against a copied save and active mod set')
     p.add_argument('fixture', type=Path); p.add_argument('--save', type=Path, required=True)
     p.add_argument('--config', type=Path, default=Path(c.CFG['player_data']) / 'Config/ModsConfig.xml')
@@ -141,7 +142,7 @@ def dispatch(args):
         probe(args.item, args.timeout)
     elif args.command == 'test':
         from .runner import test
-        test(c.project(args.project, args.worktree), args.suite, args.additional, args.timeout)
+        test(c.project(args.project, args.worktree), args.suite, args.additional, args.timeout, args.local_paths)
     elif args.command == 'probe':
         from .probe import probe
         probe(args.fixture, args.save, args.config, args.timeout, args.package)
