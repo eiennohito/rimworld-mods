@@ -8,6 +8,28 @@ from rwlib import steamworks as sw
 
 
 class SteamworksTests(unittest.TestCase):
+    def test_namespace_guard_runs_before_loading_native_library(self):
+        for namespaces in (('pid:[1]', 'pid:[2]'), FileNotFoundError('hidden host PID')):
+            with self.subTest(namespaces=namespaces), \
+                    patch.object(sw.Path, 'read_text', side_effect=['21684\n', 'steam\n']), \
+                    patch.object(sw.os, 'readlink', side_effect=namespaces), \
+                    patch.object(sw.ct, 'CDLL') as load:
+                with self.assertRaisesRegex(ValueError, 'unsandboxed execution'):
+                    sw.Client('unused.so')
+                load.assert_not_called()
+
+    def test_namespace_guard_accepts_shared_namespace_and_rejects_stale_pid(self):
+        with patch.object(sw.Path, 'read_text', side_effect=['21684\n', 'steam\n']), \
+                patch.object(sw.os, 'readlink', return_value='pid:[1]'):
+            sw.require_steam_namespace()
+        for contents in (['8\n', 'kworker\n'], ['invalid'], ['0']):
+            with self.subTest(contents=contents), \
+                    patch.object(sw.Path, 'read_text', side_effect=contents), \
+                    patch.object(sw.os, 'readlink') as readlink:
+                with self.assertRaisesRegex(ValueError, 'Cannot verify'):
+                    sw.require_steam_namespace()
+                readlink.assert_not_called()
+
     def client(self):
         client = sw.Client.__new__(sw.Client)
         client.user, client.utils, client.ugc = 10, 11, 12

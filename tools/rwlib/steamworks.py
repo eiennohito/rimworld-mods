@@ -49,8 +49,31 @@ def timeout_value(value):
     return value
 
 
+def require_steam_namespace():
+    """Steam tracks the PID supplied by the native API in its own namespace."""
+    try:
+        pid = (Path.home() / '.steam/steam.pid').read_text().strip()
+        if not pid.isascii() or not pid.isdecimal() or int(pid) <= 0:
+            raise ValueError('Invalid Steam PID')
+        process = Path('/proc') / str(int(pid))
+        if (process / 'comm').read_text().strip() != 'steam':
+            raise ValueError('Steam PID is stale')
+        steam_namespace = os.readlink(process / 'ns/pid')
+        own_namespace = os.readlink('/proc/self/ns/pid')
+    except (OSError, ValueError):
+        raise ValueError('Cannot verify the desktop Steam process namespace. '
+                         'Start Steam and run this command outside any PID sandbox/container '
+                         '(agents must request unsandboxed execution).') from None
+    if steam_namespace != own_namespace:
+        raise ValueError('Desktop Steam uses a different PID namespace. '
+                         'Run this command outside the PID sandbox/container '
+                         '(agents must request unsandboxed execution); otherwise Steam may '
+                         'track unrelated host processes as RimWorld and refuse to exit.')
+
+
 class Client:
     def __init__(self, library):
+        require_steam_namespace()
         self.lib = ct.CDLL(str(library))
         self.initialized = False
         p, u64, u32, boolean = ct.c_void_p, ct.c_uint64, ct.c_uint32, ct.c_bool

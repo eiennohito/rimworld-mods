@@ -152,6 +152,11 @@ excluded from the tooling repository.
 
 Publishing defaults to the running desktop Steam session. Steam must be online
 under the same Linux user with a RimWorld license; no separate login is needed.
+Run desktop publishing and `steam-probe` in Steam's PID namespace, outside PID
+sandboxes or containers. Coding agents must request unsandboxed execution for
+these commands. A sandbox PID can make Steam track an unrelated host process as
+RimWorld and prevent it from exiting; the native client rejects this environment
+before initializing Steamworks.
 The command updates the existing item named by `About/PublishedFileId.txt` with
 the built package, title, description, main preview and release note.
 
