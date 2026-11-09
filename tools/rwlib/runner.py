@@ -131,17 +131,17 @@ def test(project, suite, additional=(), timeout=240):
         game = make_game(run_dir)
         dep_paths = dependencies(project, additional)
         package_ids = []
-        snapshot = {project['package_id']: {'package': str(package), 'build_id': record['build_id']}}
+        packages = {project['package_id']: {'package': str(package), 'build_id': record['build_id']}}
         snapshot.copy_tree(package, game / 'Mods' / project['key'])
         for package_id, path in dep_paths.items():
             destination = game / 'Mods' / path.name
             snapshot.copy_tree(path, destination, ignore=shutil.ignore_patterns('.git', 'bin', 'obj'))
             package_ids.append(package_id)
-            snapshot[package_id] = {'source': str(path)}
+            packages[package_id] = {'source': str(path)}
         helper = harness(project, suite, run_dir)
         package_ids += [project['package_id'], helper]
         c.write_json(run_dir / 'inputs.json', {'project': project['key'], 'suite': suite,
-                     'packages': snapshot, 'game': c.game_record()})
+                     'packages': packages, 'game': c.game_record()})
         ui = spec.get('ui', False)
         command = [str(game / 'RimWorld'), '-savedatafolder=' + str(data), '-mod=' + ','.join(package_ids),
                    *([] if ui else ['-Headless']), '-WorkspaceDiagnosticsExit', '-NoCrashDialog', *spec.get('args', [])]

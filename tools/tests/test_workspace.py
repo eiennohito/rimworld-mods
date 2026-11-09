@@ -107,6 +107,54 @@ class WorkspaceTests(unittest.TestCase):
         for key in ('volumeMaster', 'volumeGame', 'volumeMusic', 'volumeAmbient', 'volumeUI'):
             self.assertEqual(prefs.findtext(key), '0')
         self.assertEqual(prefs.findtext('fullscreen'), 'False')
+
+    def test_runtime_runner_stages_independent_mods_and_records_packages(self):
+        dependency = self.root / 'dependency'
+        (dependency / '.git').mkdir(parents=True)
+        (dependency / '.git/config').write_text('not runtime content')
+        (dependency / 'payload').write_bytes(b'dependency')
+        project = {'key': 'test-mod', 'package_id': 'test.mod', 'tests': {'runtime': {}}}
+
+        def make_game(run_dir):
+            game = run_dir / 'game'
+            (game / 'Mods').mkdir(parents=True)
+            core.write_json(run_dir / 'quiet-audio.json', {'noAudio': True})
+            return game
+
+        test = self
+        class Process:
+            pid = 99999999
+            returncode = 0
+            def __init__(self, command, **kwargs):
+                run_dir = kwargs['cwd']
+                staged = run_dir / 'game/Mods/test-mod/payload'
+                test.assertEqual(staged.read_bytes(), b'new-build')
+                staged.write_bytes(b'isolated edit')
+                test.assertEqual((test.source / 'payload').read_bytes(), b'new-build')
+                test.assertEqual((run_dir / 'game/Mods/dependency/payload').read_bytes(), b'dependency')
+                test.assertFalse((run_dir / 'game/Mods/dependency/.git').exists())
+                test.assertIn('-Headless', command)
+                core.write_json(run_dir / 'data/report.json', {
+                    'steam': {'active': False, 'initialized': False, 'nativeLibraryMapped': False},
+                    'audio': {'masterVolume': 0},
+                    'mods': [{'packageId': key} for key in ('test.mod', 'dep.mod', 'local.fixture')],
+                    'tests': [{'pass': True}],
+                })
+            def wait(self, timeout=None): return self.returncode
+
+        with patch.object(core, 'ROOT', self.root), \
+             patch.object(build, 'build', return_value=self.source), \
+             patch.object(build, 'validate', return_value={'build_id': 'example-build'}), \
+             patch.object(core, 'game_record', return_value={'version': '1.7.test'}), \
+             patch.object(runner, 'make_game', side_effect=make_game), \
+             patch.object(runner, 'dependencies', return_value={'dep.mod': dependency}), \
+             patch.object(runner, 'harness', return_value='local.fixture'), \
+             patch.object(runner.subprocess, 'Popen', Process), lifecycle.session('runner-staging'):
+            run = runner.test(project, 'runtime')
+        inputs = json.loads((run / 'inputs.json').read_text())
+        self.assertEqual(set(inputs['packages']), {'test.mod', 'dep.mod'})
+        self.assertEqual(inputs['packages']['test.mod']['build_id'], 'example-build')
+        self.assertTrue(json.loads((run / 'result.json').read_text())['pass'])
     def test_build_records_legacy_dependency_assemblies(self):
         dependency = self.root / 'workshop/1541460369'
         for relative in ('Assemblies/BPC.dll', 'v1.6/Assemblies/BPC.dll'):
