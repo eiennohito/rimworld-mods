@@ -1,0 +1,18 @@
+# Copy into projects/YOUR-KEY/mod.toml and create that directory's own Git repository.
+# Write PURPOSE.md in plain language before implementation. See README.md for the schema.
+schema = 1
+key = "your-key"
+name = "Your mod name"
+package_id = "local.yourmod"
+status = "active"
+project = "Source/YourMod.csproj"
+assembly = "YourMod"
+content = ["About", "Textures", "Languages", "Defs", "Patches", "LICENSE", "PURPOSE.md"]
+exclude = ["About/PublishedFileId.txt"]
+dependencies = ["brrainz.harmony"]
+# Optional project-owned helper DLLs copied beside the mod assembly (record their provenance).
+# bundled_assemblies = ["Libraries/0SomeApiStub.dll"]
+
+# Declare only tests which exist. C# runtime checks go in tests/runtime/.
+# [tests.runtime]
+# args = []

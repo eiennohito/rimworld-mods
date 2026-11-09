@@ -1,0 +1,9 @@
+[project]
+name = "rimworld-workspace"
+version = "0.1.0"
+description = "Local RimWorld 1.7 build, test and installation tooling"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false

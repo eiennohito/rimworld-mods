@@ -1,0 +1,17 @@
+.cache/
+.agents/
+.aws/
+.codex/
+investigations/
+outputs/
+sessions/
+state/
+references/
+archive/
+projects/
+worktrees/
+tools/.venv/
+workspace.json
+**/bin/
+**/obj/
+**/__pycache__/

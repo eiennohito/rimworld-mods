@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+rw_tools=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+export UV_CACHE_DIR="$rw_tools/../.cache/uv"
+exec uv run --project "$rw_tools" --directory "$rw_tools" --frozen python -m rwlib "$@"

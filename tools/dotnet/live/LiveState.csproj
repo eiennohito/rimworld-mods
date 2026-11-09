@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload></PropertyGroup>
+  <ItemGroup><Reference Include="Microsoft.Diagnostics.Runtime"><HintPath>$(DiagnosticsToolPath)/Microsoft.Diagnostics.Runtime.dll</HintPath></Reference></ItemGroup>
+</Project>
