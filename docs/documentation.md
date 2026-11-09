@@ -6,7 +6,8 @@ file for every paragraph.
 
 | Location | Reader and purpose |
 | --- | --- |
-| Workspace README and operating guides | Owner: using this workspace |
+| Workspace README | Public contributors: published repositories, setup and shared tooling |
+| Operating guides | Contributors and owner: using the shared commands |
 | Project MAINTAINER.md | Owner: release steps and useful local findings |
 | AGENTS.md | Agents: edit boundaries and required behavior |
 | Project README, PURPOSE.md and About/About.xml | Players: behavior, controls, dependencies and meaningful limits; PURPOSE also guides contributors |

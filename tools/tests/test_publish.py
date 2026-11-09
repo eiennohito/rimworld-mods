@@ -98,9 +98,9 @@ class PublishTests(unittest.TestCase):
 
     def test_live_upload_requires_account_and_steamcmd_before_building(self):
         with self.assertRaisesRegex(ValueError, '--account'):
-            publish.publish(self.project)
+            publish.publish(self.project, backend='steamcmd')
         with patch.object(publish.shutil, 'which', return_value=None), self.assertRaisesRegex(ValueError, 'not installed'):
-            publish.publish(self.project, account='example')
+            publish.publish(self.project, backend='steamcmd', account='example')
         self.compile.assert_not_called()
 
     def test_account_cannot_add_steam_console_commands(self):
@@ -114,14 +114,14 @@ class PublishTests(unittest.TestCase):
         executable.write_text('#!/bin/sh\nexit 1\n')
         executable.chmod(0o755)
         with patch.object(publish.subprocess, 'Popen') as process:
-            run = publish.publish(self.project, dry_run=True, steamcmd='tools/steamcmd.sh')
+            run = publish.publish(self.project, backend='steamcmd', dry_run=True, steamcmd='tools/steamcmd.sh')
         self.assertEqual(json.loads((run / 'command.json').read_text())[0], str(executable))
         process.assert_not_called()
 
     def test_success_requires_confirmation_for_the_exact_item(self):
         process = self.process('Success. Published File ID: 123456\n')
         with patch.object(publish.shutil, 'which', return_value='/fake/steamcmd'), patch.object(publish.subprocess, 'Popen', process):
-            run = publish.publish(self.project, account='owner')
+            run = publish.publish(self.project, backend='steamcmd', account='owner')
         receipts = list((self.root / 'state/publications/example').glob('*.json'))
         self.assertEqual(len(receipts), 1)
         result = json.loads(receipts[0].read_text())
@@ -136,7 +136,7 @@ class PublishTests(unittest.TestCase):
         process = self.process('ERROR! Not logged on.\n')
         with patch.object(publish.shutil, 'which', return_value='/fake/steamcmd'), patch.object(publish.subprocess, 'Popen', process):
             with self.assertRaisesRegex(ValueError, 'did not confirm publication'):
-                publish.publish(self.project, account='owner')
+                publish.publish(self.project, backend='steamcmd', account='owner')
         receipt = next((self.root / 'state/publications/example').glob('*.json'))
         self.assertEqual(json.loads(receipt.read_text())['status'], 'failed/unconfirmed')
 
@@ -144,7 +144,7 @@ class PublishTests(unittest.TestCase):
         output = '\x1b[0mCommitting update...\x1b[0mSuccess.\x1b[0mUnloading Steam API...OK\n'
         process = self.process(output)
         with patch.object(publish.shutil, 'which', return_value='/fake/steamcmd'), patch.object(publish.subprocess, 'Popen', process):
-            run = publish.publish(self.project, account='owner')
+            run = publish.publish(self.project, backend='steamcmd', account='owner')
         receipt = next((self.root / 'state/publications/example').glob('*.json'))
         result = json.loads(receipt.read_text())
         self.assertEqual(result['status'], 'published')
@@ -164,20 +164,20 @@ class PublishTests(unittest.TestCase):
         process = self.process('Success. Published item 123456.\n', rewrite=rewrite)
         with patch.object(publish.shutil, 'which', return_value='/fake/steamcmd'), patch.object(publish.subprocess, 'Popen', process):
             with self.assertRaisesRegex(ValueError, 'changed the item ID'):
-                publish.publish(self.project, account='owner')
+                publish.publish(self.project, backend='steamcmd', account='owner')
 
     def test_nonzero_exit_is_failure_even_with_a_success_line(self):
         process = self.process('Success. Published item 123456.\n', code=1)
         with patch.object(publish.shutil, 'which', return_value='/fake/steamcmd'), patch.object(publish.subprocess, 'Popen', process):
             with self.assertRaisesRegex(ValueError, 'did not confirm publication'):
-                publish.publish(self.project, account='owner')
+                publish.publish(self.project, backend='steamcmd', account='owner')
 
     def test_vdf_rejects_control_characters(self):
         for bad in ('note\0text', 'note\x1btext'):
             with self.assertRaises(ValueError): publish.quote(bad)
 
     def test_cli_accepts_publish_options(self):
-        args = ['rw', 'publish', 'example', '--dry-run', '--account', 'owner', '--notes', 'release.txt', '--steamcmd', '/bin/steamcmd']
+        args = ['rw', 'publish', 'example', '--backend', 'steamcmd', '--dry-run', '--account', 'owner', '--notes', 'release.txt', '--steamcmd', '/bin/steamcmd']
         with patch.object(sys, 'argv', args), patch.object(cli, 'dispatch') as dispatch, patch.object(lifecycle, 'session'):
             cli.execute()
         parsed = dispatch.call_args.args[0]
@@ -225,6 +225,28 @@ class PublishTests(unittest.TestCase):
         with patch.object(sys, 'argv', ['rw', 'publish', 'example', '--backend', 'desktop', '--dry-run']), patch.object(cli, 'dispatch') as dispatch, patch.object(lifecycle, 'session'):
             cli.execute()
         self.assertEqual(dispatch.call_args.args[0].backend, 'desktop')
+
+    def test_cli_defaults_to_desktop(self):
+        with patch.object(sys, 'argv', ['rw', 'publish', 'example', '--dry-run']), patch.object(cli, 'dispatch') as dispatch, patch.object(lifecycle, 'session'):
+            cli.execute()
+        self.assertEqual(dispatch.call_args.args[0].backend, 'desktop')
+
+    def test_default_publication_uses_desktop_without_steamcmd(self):
+        reply = dict(result=1, item_id='123456', needs_agreement=False)
+        with patch.object(steamworks, 'worker', return_value=reply) as worker, \
+             patch.object(publish, 'submit') as steamcmd, \
+             patch.object(publish.shutil, 'which', side_effect=AssertionError('Unexpected SteamCMD lookup')):
+            run = publish.publish(self.project)
+        worker.assert_called_once_with(run, timeout=600)
+        steamcmd.assert_not_called()
+        receipt = self.root / 'state/publications/example' / (run.name + '.json')
+        self.assertEqual(json.loads(receipt.read_text())['backend'], 'desktop')
+
+    def test_steamcmd_options_require_explicit_backend(self):
+        for options in ({'account': 'owner'}, {'steamcmd': '/bin/steamcmd'}):
+            with self.subTest(options=options), self.assertRaisesRegex(ValueError, '--backend steamcmd'):
+                publish.publish(self.project, **options)
+        self.compile.assert_not_called()
 
 
 if __name__ == '__main__':

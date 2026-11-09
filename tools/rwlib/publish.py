@@ -217,7 +217,7 @@ def submit_desktop(run, plan, timeout):
     print('Publication receipt:', receipt)
 
 
-def publish(project, dry_run=False, account=None, notes=None, steamcmd=None, backend='steamcmd', timeout=600):
+def publish(project, dry_run=False, account=None, notes=None, steamcmd=None, backend='desktop', timeout=600):
     if backend not in ('steamcmd', 'desktop'):
         raise ValueError('Unknown publication backend.')
     if backend == 'desktop':
