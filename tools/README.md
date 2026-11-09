@@ -8,6 +8,18 @@ discovers each direct child containing `mod.toml` on every command. The folder
 name must match the manifest's `key`. There is no registration command or central
 mod list to edit.
 
+## Working with a coding agent
+
+The workspace is designed primarily for AI coding agents. Codex and Claude Code
+both work well with it; the commands below are also usable directly.
+
+Start your agent in the workspace root and have it read [AGENTS.md](../AGENTS.md).
+For a selected mod, it should also read that repository's agent instructions,
+`PURPOSE.md` and build guide. Describe the problem or change you want; the shared
+tools let the agent inspect current game and mod code, build packages and run
+isolated checks. Installation, activation and publication each require an
+explicit request.
+
 ## First checkout
 
 The build tooling requires Linux, Git, uv, Python 3.11 or newer, the .NET 10 SDK,

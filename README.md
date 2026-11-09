@@ -1,5 +1,9 @@
 # RimWorld mods
 
+A RimWorld 1.7 modding workspace built primarily for AI coding agents.
+Codex and Claude Code both work well with it. The shared tools can also be used
+directly.
+
 ## Published mods
 
 **KanbanStockpile-Refilled** — stack limits and refill thresholds for stockpiles

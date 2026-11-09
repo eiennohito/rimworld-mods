@@ -1,6 +1,7 @@
 # RimWorld modding workspace
 
-For coding agents. Read `README.md`, `workspace.json`, `docs/rimworld-1.7.md`
+For coding agents. Read `README.md`, `tools/README.md`, `workspace.json`
+(or `workspace.example.json` before local setup), `docs/rimworld-1.7.md`
 and the selected project's `PURPOSE.md`. Read `docs/running-rimworld.md` before
 game runs and `docs/lifecycle.md` before creating scratch or cleaning files.
 
