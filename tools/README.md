@@ -13,12 +13,23 @@ mod list to edit.
 The workspace is designed primarily for AI coding agents. Codex and Claude Code
 both work well with it; the commands below are also usable directly.
 
-Start your agent in the workspace root and have it read [AGENTS.md](../AGENTS.md).
-For a selected mod, it should also read that repository's agent instructions,
-`PURPOSE.md` and build guide. Describe the problem or change you want; the shared
-tools let the agent inspect current game and mod code, build packages and run
-isolated checks. Installation, activation and publication each require an
-explicit request.
+Use Codex or Claude Code from the workspace root and describe what you want
+investigated or changed—for example, “Find why pawns keep refilling this shelf.”
+
+The important feedback loop is testing behavior in the game. An agent can write
+a focused scenario, run it in a headless RimWorld simulation, inspect the result
+and revise the mod. For example, a hauling scenario could send two pawns toward
+the same limited stockpile and check whether their deliveries overfill it.
+Keeping the scenario as a regression test makes later changes easier to check.
+
+The Linux launcher uses a separate host, copied mods and private game data, with
+Steam disabled and audio muted. Scenarios can use real game objects and advance
+the simulation, so checks can cover interactions that compilation alone cannot
+establish. Coverage depends on what each scenario actually exercises; a direct
+quantity check does not establish a complete pawn hauling route. Headless runs
+still pay the game startup cost, so use smaller checks where sufficient and
+batch related assertions into one run. See [running isolated checks](../docs/running-rimworld.md)
+for fixtures, save probes and results.
 
 ## First checkout
 
