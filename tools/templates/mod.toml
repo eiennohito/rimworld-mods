@@ -1,5 +1,5 @@
 # Copy into projects/YOUR-KEY/mod.toml and create that directory's own Git repository.
-# Write PURPOSE.md in plain language before implementation. See README.md for the schema.
+# Explain the mod in README.md before implementation. See README.md here for template guidance.
 schema = 1
 key = "your-key"
 name = "Your mod name"
@@ -7,8 +7,8 @@ package_id = "local.yourmod"
 status = "active"
 project = "Source/YourMod.csproj"
 assembly = "YourMod"
-content = ["About", "Textures", "Languages", "Defs", "Patches", "LICENSE", "PURPOSE.md"]
-exclude = ["About/PublishedFileId.txt"]
+content = ["About", "Textures", "Languages", "Defs", "Patches", "LICENSE"]
+exclude = ["About/PublishedFileId.txt", "About/Workshop.txt"]
 dependencies = ["brrainz.harmony"]
 # Optional project-owned helper DLLs copied beside the mod assembly (record their provenance).
 # bundled_assemblies = ["Libraries/0SomeApiStub.dll"]

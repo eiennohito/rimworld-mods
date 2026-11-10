@@ -126,7 +126,7 @@ def execute():
 def dispatch(args):
     if args.command == 'check':
         for key, project in c.projects().items():
-            for relative in ('PURPOSE.md', '.git', project['project']):
+            for relative in ('.git', project['project']):
                 if not (project['root'] / relative).exists(): raise ValueError(f'{key}: missing {relative}')
         subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=c.ROOT / 'tools', check=True, env=c.environment())
     elif args.command == 'setup': setup({key: getattr(args, key) for key in (*DIRECTORIES, 'ilspy')})

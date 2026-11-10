@@ -21,9 +21,10 @@ class PublishTests(unittest.TestCase):
         self.description = 'Storage "limits"\nKeep C:\\Mods & <examples> intact.'
         about = ET.Element('ModMetaData')
         for key, value in {'name': 'Example', 'packageId': 'local.example',
-                           'modVersion': '1.1', 'description': self.description}.items():
+                           'modVersion': '1.1', 'description': 'In-game reference.'}.items():
             ET.SubElement(about, key).text = value
         ET.ElementTree(about).write(self.source / 'About/About.xml', encoding='utf-8')
+        (self.source / 'About/Workshop.txt').write_text(self.description + '\n', encoding='utf-8')
         (self.source / 'About/PublishedFileId.txt').write_text('123456\n')
         (self.source / 'About/Preview.png').write_bytes(b'preview')
         (self.source / 'CHANGELOG.md').write_text('## 1.1\n\n- Carry several stacks.\n\n## 1.0\n\n- Old behavior.\n')
@@ -57,6 +58,7 @@ class PublishTests(unittest.TestCase):
             run = publish.publish(self.project, dry_run=True)
         process.assert_not_called()
         self.assertEqual((run / 'description.txt').read_text(), self.description + '\n')
+        self.assertEqual(ET.parse(run / 'content/About/About.xml').findtext('description'), 'In-game reference.')
         self.assertEqual((run / 'change-note.txt').read_text(), 'Version 1.1\n\n- Carry several stacks.\n')
         vdf = (run / 'upload.vdf').read_text()
         self.assertIn('"appid" "294100"', vdf)
@@ -78,6 +80,16 @@ class PublishTests(unittest.TestCase):
                 publish.prepare(self.project)
         path.unlink()
         with self.assertRaisesRegex(ValueError, 'existing item ID'):
+            publish.prepare(self.project)
+        self.compile.assert_not_called()
+
+    def test_workshop_description_is_required_without_using_the_in_game_reference(self):
+        path = self.source / 'About/Workshop.txt'
+        path.unlink()
+        with self.assertRaisesRegex(ValueError, 'About/Workshop.txt'):
+            publish.prepare(self.project)
+        path.write_text(' \n')
+        with self.assertRaisesRegex(ValueError, 'must not be empty'):
             publish.prepare(self.project)
         self.compile.assert_not_called()
 

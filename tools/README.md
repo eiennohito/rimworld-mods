@@ -117,8 +117,9 @@ Outputs and installation backups persist. See [the lifecycle](../docs/lifecycle.
 
 ## Editing and checking a mod
 
-Each mod owns its source, license, content, manifest and fixtures. Read its
-`PURPOSE.md` and `BUILDING.md`. To use another checkout inside the workspace:
+Each mod owns its source, license, content, manifest and fixtures.
+Read its `README.md` and development guide (`DESIGN.md`).
+To use another checkout inside the workspace:
 
 ```sh
 tools/rw build kanban-refilled --worktree worktrees/refilled-change
@@ -157,8 +158,11 @@ sandboxes or containers. Coding agents must request unsandboxed execution for
 these commands. A sandbox PID can make Steam track an unrelated host process as
 RimWorld and prevent it from exiting; the native client rejects this environment
 before initializing Steamworks.
-The command updates the existing item named by `About/PublishedFileId.txt` with
-the built package, title, description, main preview and release note.
+The command updates the existing item named by `About/PublishedFileId.txt` with the built package, title, Workshop description, main preview and release note.
+Write player-focused Workshop text in `About/Workshop.txt`; `About/About.xml` remains the in-game reference and supplies the title and version metadata.
+Workshop text is a publication source file and can be excluded from the runtime package.
+Before a release, update the mod and assembly versions and prepare the matching `CHANGELOG.md` entry.
+`About/Preview.png` supplies the main image; additional carousel images remain managed on the Workshop item's image page.
 
 ```sh
 tools/rw steam-probe --item 3832323892

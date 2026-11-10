@@ -60,6 +60,12 @@ def prepare(project, notes=None):
     item = id_path.read_text().strip() if id_path.is_file() else ''
     if not re.fullmatch(r'[1-9][0-9]{0,19}', item) or int(item) > 2**64 - 1:
         raise ValueError('Publishing requires an existing item ID in About/PublishedFileId.txt.')
+    workshop = project['root'] / 'About/Workshop.txt'
+    if not workshop.is_file():
+        raise ValueError('Publishing requires About/Workshop.txt for the Workshop description.')
+    description = workshop.read_text(encoding='utf-8').strip()
+    if not description:
+        raise ValueError('The Workshop description must not be empty.')
     package = b.build(project)
     record = b.validate(package)
     about = ET.parse(package / 'About/About.xml').getroot()
@@ -70,9 +76,6 @@ def prepare(project, notes=None):
     version = (about.findtext('modVersion') or '').strip()
     if not re.fullmatch(r'\d+(?:\.\d+)+', version):
         raise ValueError('About/About.xml needs a numeric modVersion for this release.')
-    description = (about.findtext('description') or '').strip()
-    if not description:
-        raise ValueError('The Workshop description must not be empty.')
     change_note = release_note(project, version, notes)
     title = (about.findtext('name') or '').strip()
     if not title:

@@ -12,6 +12,17 @@ from rwlib import __main__ as cli
 
 
 class ConfigTests(unittest.TestCase):
+    def test_check_does_not_require_separate_project_documentation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / '.git').mkdir()
+            (root / 'Source').mkdir()
+            (root / 'Source/Example.csproj').touch()
+            project = {'root': root, 'project': 'Source/Example.csproj'}
+            with patch.object(core, 'projects', return_value={'example': project}), patch.object(cli.subprocess, 'run') as run:
+                cli.dispatch(type('Args', (), {'command': 'check'})())
+            run.assert_called_once()
+
     def test_fresh_tooling_checkout_starts_without_config_or_mods(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
